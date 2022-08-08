@@ -1,5 +1,4 @@
-from hashlib import new
-from typing import DefaultDict, List
+from typing import DefaultDict, List, Tuple
 from collections import defaultdict
 
 from qulacs import Observable
@@ -28,6 +27,18 @@ class RandomAccessEncoder:
         assert self.__operators != (), f"({m},{n},p)-QRAC is not supported now."
         self.__qubit_to_vertex_map = defaultdict(lambda: [])
         self.__vertex_to_op_map = defaultdict(lambda: ())
+    
+    @property
+    def qrac_type(self) -> Tuple[int, int]:
+        return (self.__m, self.__n)
+    
+    @property
+    def qubit_to_vertex_map(self) -> DefaultDict[int, List[int]]:
+        return self.__qubit_to_vertex_map
+    
+    @property
+    def vertex_to_op_map(self) -> DefaultDict[int, Tuple[int, str]]:
+        return self.__vertex_to_op_map
 
     @staticmethod
     def _partition_vertices(edges: np.ndarray) -> DefaultDict[int, List[int]]:
@@ -59,11 +70,18 @@ class RandomAccessEncoder:
         qubit_idx_j = self.__vertex_to_op_map[j][0]
         return f"{op_i} {qubit_idx_i} {op_j} {qubit_idx_j}"
 
-    def _adjust_weight(self, weight: float) -> float:
-        # TODO: implement here.
-        return weight
+    def _adjust_weight(self, weight: int) -> float:
+        # FIXME: generalize to self.__n >= 2.
+        adjust_ratio = 0.5 * self.__m
+        return adjust_ratio * weight
+    
+    def _get_edges(problem_instance: Model) -> np.ndarray:
+        num_vertices = problem_instance.number_of_binary_variables
+        edges = np.zeros((num_vertices, num_vertices))
+        for (i, j), coef in problem_instance.q
+        return edges
 
-    def _generate_hamiltonian(
+    def generate_hamiltonian(
         self, edges: np.ndarray, problem_instance: Model
     ) -> Observable:
         hamiltonian = Observable(len(edges))

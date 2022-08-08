@@ -19,7 +19,7 @@ def _generate_model_from_graph(
     var = [model.binary_var(name="x" + str(i)) for i in nodes]
     model.maximize(
         model.sum(
-            edges[i, j] * (var[i] + var[j] - 2 * var[i] * var[j])
+            0.5 * edges[i, j] * (var[i] + var[j] - 2 * var[i] * var[j])
             for i in nodes
             for j in nodes
         )
@@ -45,7 +45,7 @@ def regular_graph(
             weight = 1
         else:
             weight = seed.randint(min_weight, max_weight)
-    edges[i, j] = edges[j, i] = weight
+        edges[i, j] = edges[j, i] = weight
 
     if draw:
         nx.draw(graph, with_labels=True, font_color="whitesmoke")
