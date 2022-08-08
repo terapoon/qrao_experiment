@@ -36,11 +36,15 @@ def regular_graph(
     max_weight: int = 1,
     draw: bool = False,
 ) -> Model:
+    assert max_weight >= min_weight
     seed = np.random.RandomState(seed)
     graph = nx.random_regular_graph(d=degree, n=num_nodes, seed=seed)
     edges = np.zeros((num_nodes, num_nodes))
     for i, j in graph.edges():
-        weight = seed.randint(min_weight, max_weight)
+        if min_weight == max_weight:
+            weight = 1
+        else:
+            weight = seed.randint(min_weight, max_weight)
     edges[i, j] = edges[j, i] = weight
 
     if draw:
