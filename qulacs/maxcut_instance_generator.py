@@ -1,5 +1,3 @@
-from ast import NodeTransformer
-from re import A
 import numpy as np
 import networkx as nx
 from networkx import Graph
@@ -11,17 +9,18 @@ Functions to generate docplex model of maxcut problem.
 
 
 def _generate_model_from_graph(
-    edges: np.ndarray,
+    graph: Graph,
+    edge_weights: np.ndarray,
     num_nodes: int,
 ) -> Model:
     model = Model("maxcut")
     nodes = list(range(num_nodes))
+    edges = graph.edges()
     var = [model.binary_var(name="x" + str(i)) for i in nodes]
     model.maximize(
         model.sum(
-            0.5 * edges[i, j] * (var[i] + var[j] - 2 * var[i] * var[j])
-            for i in nodes
-            for j in nodes
+            edge_weights[i, j] * (var[i] + var[j] - 2 * var[i] * var[j])
+            for i, j in edges
         )
     )
 
@@ -39,15 +38,15 @@ def regular_graph(
     assert max_weight >= min_weight
     seed = np.random.RandomState(seed)
     graph = nx.random_regular_graph(d=degree, n=num_nodes, seed=seed)
-    edges = np.zeros((num_nodes, num_nodes))
+    edge_weights = np.zeros((num_nodes, num_nodes))
     for i, j in graph.edges():
         if min_weight == max_weight:
             weight = 1
         else:
             weight = seed.randint(min_weight, max_weight)
-        edges[i, j] = edges[j, i] = weight
+        edge_weights[i, j] = edge_weights[j, i] = weight
 
     if draw:
         nx.draw(graph, with_labels=True, font_color="whitesmoke")
 
-    return _generate_model_from_graph(edges, num_nodes)
+    return _generate_model_from_graph(graph, edge_weights, num_nodes)
