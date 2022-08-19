@@ -55,9 +55,6 @@ class VQEForQRAO:
 
         # Add Layers (l > 0)
         for layer in range(self.__num_layer):
-            # Add RY gates.
-            for i in range(self.__num_qubits):
-                circuit.add_gate(RY(i, theta_list[(layer + 1) * self.__num_qubits + i]))
 
             # Add CZ gates (entanglements)
             if self.__entanglement == "compatilbe":
@@ -79,6 +76,10 @@ class VQEForQRAO:
                         if i != j:
                             break
                     circuit.add_gate(CZ(i, j))
+
+            # Add RY gates.
+            for i in range(self.__num_qubits):
+                circuit.add_gate(RY(i, theta_list[(layer + 1) * self.__num_qubits + i]))
 
         return circuit
 
