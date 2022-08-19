@@ -1,4 +1,4 @@
-from typing import DefaultDict, List, Tuple, Dict
+from typing import DefaultDict, List, Tuple, Dict, Set
 from collections import defaultdict
 
 from qulacs import Observable
@@ -167,3 +167,22 @@ class RandomAccessEncoder:
                 else:
                     term_str += "I"
             print(term_str)
+
+    def calculate_edge_among_qubits(
+        self, problem_instance: Model
+    ) -> Set[Tuple[int, int]]:
+        """
+        This function enumerate all pair of qubits such that there is an edge
+        between the vertices assigned to the qubits in the original graph.
+        """
+        qubit_edges_set = set()
+        _, _, edge_weight = self._convert_into_ising_model(problem_instance)
+        num_qubit = len(self.qubit_to_vertex_map)
+        for i in range(num_qubit):
+            for j in range(i + 1, num_qubit):
+                for vertex_i in self.qubit_to_vertex_map[i]:
+                    for vertex_j in self.qubit_to_vertex_map[j]:
+                        if edge_weight[vertex_i][vertex_j] != 0:
+                            qubit_edges_set.add((i, j))
+
+        return qubit_edges_set
