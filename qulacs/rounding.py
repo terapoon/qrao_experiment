@@ -15,6 +15,7 @@ class MagicRounding:
         n: int,
         # vqe_instance: VQEForQRAO,
         encoder: RandomAccessEncoder,
+        basis_sampling_method: str = "uniform",
     ):
         self.__decording_rules = defaultdict(
             lambda: (),
@@ -50,6 +51,11 @@ class MagicRounding:
         assert self.__decording_rule != (), f"({m},{n},p)-QRAC is not supported now."
         # self.__vqe_instance = vqe_instance
         self.__encoder = encoder
+        if basis_sampling_method not in ["uniform", "weighted"]:
+            raise ValueError(
+                f"basis_sampling_method: {basis_sampling_method} is not supported"
+            )
+        self.basis_sampling_method = basis_sampling_method
 
     def _circuit_converting_qrac_basis_to_z_basis(self, basis: List[int]):
         num_qubits = len(self.__encoder.qubit_to_vertex_map())
@@ -62,9 +68,17 @@ class MagicRounding:
         elif (self.__m, self.__n) == (2, 1):
             for i, base in enumerate(basis):
                 if base == 0:
-                    circuit.add_gate()
+                    phi = -np.pi / 4
+                    theta = -np.pi / 2
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 elif base == 1:
-                    circuit.add_gate()
+                    phi = -3 * np.pi / 4
+                    theta = -np.pi / 2
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 else:
                     raise ValueError
 
@@ -72,17 +86,29 @@ class MagicRounding:
             BETA = np.arccos(1 / np.sqrt(3))
             for i, base in enumerate(basis):
                 if base == 0:
-                    circuit.add_gate(
-                        RY(
-                            i,
-                        )
-                    )
+                    phi = -BETA
+                    theta = -np.pi / 4
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 elif base == 1:
-                    circuit.add_gate()
+                    phi = np.pi - BETA
+                    theta = np.pi / 4
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 elif base == 2:
-                    circuit.add_gate()
+                    phi = np.pi + BETA
+                    theta = np.pi / 4
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 elif base == 3:
-                    circuit.add_gate()
+                    phi = BETA
+                    theta = -np.pi / 4
+                    circuit.add_RY_gate(i, np.sin(phi) * theta)
+                    circuit.add_RX_gate(i, np.cos(phi) * theta)
+
                 else:
                     raise ValueError
 
@@ -92,5 +118,13 @@ class MagicRounding:
 
         return circuit
 
-    def round():
+    def round(self, best_theta_list: List[float]):
         """Perform magic rounding"""
+        if self.basis_sampling_method == "uniform":
+            # TODO: implement here.
+            pass
+        elif self.basis_sampling_method == "weighted":
+            # TODO: implement here.
+            pass
+        else:
+            raise ValueError
