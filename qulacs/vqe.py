@@ -1,7 +1,7 @@
 from typing import List, Set, Tuple
 
 from qulacs import QuantumState, QuantumCircuit, Observable
-from qulacs.gate import CZ, RY
+from qulacs.gate import CZ, U3
 import numpy as np
 
 
@@ -51,7 +51,9 @@ class VQEForQRAO:
         circuit = QuantumCircuit(self.__num_qubits)
         # First Layer (l = 0)
         for i in range(self.__num_qubits):
-            circuit.add_gate(RY(i, theta_list[i]))
+            circuit.add_gate(
+                U3(i, theta_list[3 * i], theta_list[3 * i + 1], theta_list[3 * i + 2])
+            )
 
         # Add Layers (l > 0)
         for layer in range(self.__num_layer):
@@ -79,7 +81,14 @@ class VQEForQRAO:
 
             # Add RY gates.
             for i in range(self.__num_qubits):
-                circuit.add_gate(RY(i, theta_list[(layer + 1) * self.__num_qubits + i]))
+                circuit.add_gate(
+                    U3(
+                        i,
+                        theta_list[(layer + 1) * 3 * self.__num_qubits + 3 * i],
+                        theta_list[(layer + 1) * 3 * self.__num_qubits + 3 * i + 1],
+                        theta_list[(layer + 1) * 3 * self.__num_qubits + 3 * i + 2],
+                    )
+                )
 
         return circuit
 
