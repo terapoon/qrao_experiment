@@ -1,8 +1,10 @@
-from typing import List
+from typing import List, Dict
 from collections import defaultdict, Counter
 
 from qulacs import QuantumCircuit
 import numpy as np
+from docplex.mp.model import Model
+from qiskit_optimization.translators import from_docplex_mp
 
 from vqe import VQEForQRAO
 from encoding import RandomAccessEncoder
@@ -207,3 +209,24 @@ class MagicRounding:
                 solution_counts[sol_key] += count
 
         return solution_counts
+
+    @staticmethod
+    def get_objective_value_counts(
+        problem_instance: Model, solution_counts: Dict[str, int]
+    ):
+        objective_value_counts = defaultdict(lambda: 0, {})
+        objective = from_docplex_mp(problem_instance).objective
+        for key, count in solution_counts.items():
+            objective_value = objective.evaluate(np.asarray([int(bit) for bit in key]))
+            objective_value_counts[objective_value] += count
+
+        objective_value_counts = {
+            key: val
+            for key, val in sorted(
+                dict(objective_value_counts).items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        }
+
+        return objective_value_counts

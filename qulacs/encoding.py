@@ -85,7 +85,7 @@ class RandomAccessEncoder:
 
     def _adjust_weight(self, weight: int) -> float:
         # FIXME: generalize to self.__n >= 2.
-        adjust_ratio = 0.5 * self.__m
+        adjust_ratio = self.__m
         return adjust_ratio * weight
 
     @staticmethod

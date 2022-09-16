@@ -2,6 +2,7 @@ from typing import List, Set, Tuple
 
 from qulacs import QuantumState, QuantumCircuit, Observable
 import numpy as np
+from scipy.optimize import minimize
 
 
 class VQEForQRAO:
@@ -12,6 +13,9 @@ class VQEForQRAO:
         entanglement: str = "compatible",
         num_layer: int = 0,
         qubit_pairs: Set[Tuple[int, int]] = set(),
+        method: str = "COBYLA",
+        options={"disp": True, "maxiter": 25000},
+        printing: bool = False,
     ):
         self.__hamiltonian = hamiltonian
         self.__num_qubits = hamiltonian.get_qubit_count()
@@ -29,6 +33,12 @@ class VQEForQRAO:
         self.__num_layer = num_layer
 
         self.__qubit_pairs = qubit_pairs
+
+        self.__method = method
+
+        self.__options = options
+
+        self.__printing = printing
 
     def _make_state(self, theta_list):
         # Prepare |00...0>.
@@ -96,3 +106,33 @@ class VQEForQRAO:
     def _free_axis_ansatz_circuit(self):
         # TODO: implement here.
         pass
+
+    def minimize(self):
+        cost_history = []
+        init_theta_list = (
+            np.random.random(self.__num_qubits * (self.__num_layer + 1) * 3) * 1e-1
+        )
+        cost_history.append(self._cost_function(init_theta_list))
+
+        self.num_iter = 1
+
+        def _callback(x):
+            cost_val = self._cost_function(x)
+            cost_history.append(cost_val)
+            if self.__printing:
+                print(f'{self.num_iter}/{self.__options["maxiter"]}\t{cost_val}')
+            self.num_iter += 1
+
+        if self.__printing:
+            print("Iter\tcost")
+        opt = minimize(
+            self._cost_function,
+            init_theta_list,
+            method=self.__method,
+            options=self.__options,
+            callback=_callback,
+        )
+
+        best_theta_list = opt.x
+
+        return cost_history, best_theta_list
