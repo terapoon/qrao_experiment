@@ -30,11 +30,10 @@ class VQEForQRAO:
 
         self.__qubit_pairs = qubit_pairs
 
-    def _cost_function(self, theta_list):
+    def _make_state(self, theta_list):
         # Prepare |00...0>.
         state = QuantumState(self.__num_qubits)
         state.set_zero_state()
-
         # Construct ansatz circuit.
         if self.__rotation_gate == "normal":
             ansatz = self._normal_ansatz_circuit(theta_list)
@@ -43,6 +42,11 @@ class VQEForQRAO:
 
         # Operate quantum circuit on a prepared state.
         ansatz.update_quantum_state(state)
+
+        return state
+
+    def _cost_function(self, theta_list):
+        state = self._make_state(theta_list)
 
         return self.__hamiltonian.get_expectation_value(state)
 
