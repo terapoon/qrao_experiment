@@ -14,7 +14,7 @@ class VQEForQRAO:
         num_layer: int = 0,
         qubit_pairs: Set[Tuple[int, int]] = set(),
         method: str = "COBYLA",
-        options={"disp": True, "maxiter": 25000},
+        options={"disp": False, "maxiter": 25000},
         printing: bool = False,
     ):
         self.__hamiltonian = hamiltonian

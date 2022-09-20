@@ -49,4 +49,4 @@ def regular_graph(
     if draw:
         nx.draw(graph, with_labels=True, font_color="whitesmoke")
 
-    return _generate_model_from_graph(graph, edge_weights, num_nodes)
+    return graph, _generate_model_from_graph(graph, edge_weights, num_nodes)

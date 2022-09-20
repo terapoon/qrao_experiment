@@ -208,7 +208,7 @@ class MagicRounding:
                 sol_key = "".join([str(int(bit)) for bit in solution])
                 solution_counts[sol_key] += count
 
-        return solution_counts
+        return dict(solution_counts)
 
     @staticmethod
     def get_objective_value_counts(
