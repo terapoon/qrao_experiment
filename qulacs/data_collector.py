@@ -9,6 +9,7 @@ import pickle
 from tqdm.auto import tqdm
 
 from networkx import node_link_data
+from numpy.linalg import eigh
 
 # function to run QRAO
 def run_qrao(m, n, instance, max_level, root_path, shots):
@@ -16,6 +17,14 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
     hamiltonian = qrac.generate_hamiltonian(instance)
     # print(f"Hamiltonian is {hamiltonian}")
     num_qubit = len(qrac.qubit_to_vertex_map)
+
+    if num_qubit <= 18:
+        hamiltonian_matrix = qrac.get_hamiltonian_matrix(hamiltonian)
+        eigvals, eigvecs = eigh(hamiltonian_matrix)
+    else:
+        eigvals = None
+        eigvecs = None
+
     num_edge = len(qrac.calculate_edge_among_qubits(instance))
     # print(f"{num_qubit} qubits, {num_edge} edges")
 
@@ -48,6 +57,8 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
                 "optimum_solution": instance.solve().get_objective_value(),
                 "cost_history": cost_history,
                 "best_theta_list": best_theta_list,
+                "eigvals": eigvals,
+                "eigvecs": eigvecs,
             }
 
             # save experiment result
