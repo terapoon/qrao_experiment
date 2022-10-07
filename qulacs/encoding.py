@@ -5,6 +5,7 @@ from qulacs import Observable
 from docplex.mp.model import Model
 import numpy as np
 import retworkx as rx
+from qiskit.opflow import I, X, Y, Z
 
 
 class RandomAccessEncoder:
@@ -167,6 +168,38 @@ class RandomAccessEncoder:
                 else:
                     term_str += "I"
             print(term_str)
+
+    @staticmethod
+    def get_hamiltonian_matrix(hamiltonian: Observable) -> np.ndarray:
+        pauli_table = {
+            0: I,
+            1: X,
+            2: Y,
+            3: Z,
+        }
+        all_term = None
+        for i in range(hamiltonian.get_term_count()):
+            term = hamiltonian.get_term(i)
+            coef = term.get_coef()
+            index_list = term.get_index_list()
+            pauli_id_list = term.get_pauli_id_list()
+            terms = None
+            for j in range(hamiltonian.get_qubit_count()):
+                if j in index_list:
+                    idx = index_list.index(j)
+                    terms = (
+                        pauli_table[pauli_id_list[idx]]
+                        if terms is None
+                        # else terms ^ pauli_table[pauli_id_list[idx]]
+                        else pauli_table[pauli_id_list[idx]] ^ terms
+                    )
+                else:
+                    # terms = I if terms is None else terms ^ I
+                    terms = I if terms is None else I ^ terms
+            terms = coef * terms
+            all_term = terms if all_term is None else all_term + terms
+        print(all_term)
+        return all_term.to_matrix()
 
     def calculate_edge_among_qubits(
         self, problem_instance: Model

@@ -3,6 +3,7 @@ from typing import List, Set, Tuple
 from qulacs import QuantumState, QuantumCircuit, Observable
 import numpy as np
 from scipy.optimize import minimize
+from qiskit.algorithms.optimizers.nft import nakanishi_fujii_todo
 
 
 class VQEForQRAO:
@@ -20,7 +21,7 @@ class VQEForQRAO:
         self.__hamiltonian = hamiltonian
         self.__num_qubits = hamiltonian.get_qubit_count()
 
-        if rotation_gate not in ["normal", "freeaxis"]:
+        if rotation_gate not in ["normal", "efficientSU2", "freeaxis"]:
             raise ValueError(f"rotation_gate: {rotation_gate} is not supported.")
         self.__rotation_gate = rotation_gate
 
@@ -34,7 +35,10 @@ class VQEForQRAO:
 
         self.__qubit_pairs = qubit_pairs
 
-        self.__method = method
+        if method == "NFT":
+            self.__method = nakanishi_fujii_todo
+        else:
+            self.__method = method
 
         self.__options = options
 
@@ -47,6 +51,8 @@ class VQEForQRAO:
         # Construct ansatz circuit.
         if self.__rotation_gate == "normal":
             ansatz = self._normal_ansatz_circuit(theta_list)
+        elif self.__rotation_gate == "efficientSU2":
+            ansatz = self._efficient_su2_circuit(theta_list)
         else:
             ansatz = self._free_axis_ansatz_circuit(theta_list)
 
@@ -103,15 +109,66 @@ class VQEForQRAO:
 
         return circuit
 
+    def _efficient_su2_circuit(self, theta_list: List[float]):
+        circuit = QuantumCircuit(self.__num_qubits)
+        # First Layer (l = 0)
+        for i in range(self.__num_qubits):
+            circuit.add_RY_gate(i, theta_list[2 * i])
+            circuit.add_RZ_gate(i, theta_list[2 * i + 1])
+
+        # Add Layers (l > 0)
+        for layer in range(self.__num_layer):
+
+            # Add CZ gates (entanglements)
+            if self.__entanglement == "compatilbe":
+                # Compatible Entanglement
+                for i, j in self.__qubit_pairs:
+                    circuit.add_CZ_gate(i, j)
+
+            elif self.__entanglement == "linear":
+                # Linear entanglement
+                for i in range(self.__num_qubits - 1):
+                    circuit.add_CZ_gate(i, i + 1)
+
+            elif self.__entanglement == "random":
+                # Random entanglement
+                for _ in range(len(self.__qubit_pairs)):
+                    i = np.random.randint(0, self.__num_qubits)
+                    while True:
+                        j = np.random.randint(0, self.__num_qubits)
+                        if i != j:
+                            break
+                    circuit.add_CZ_gate(i, j)
+
+            # Add RY gates.
+            for i in range(self.__num_qubits):
+                circuit.add_RY_gate(
+                    i,
+                    theta_list[(layer + 1) * 2 * self.__num_qubits + 2 * i],
+                )
+                circuit.add_RZ_gate(
+                    i, theta_list[(layer + 1) * 2 * self.__num_qubits + 2 * i + 1]
+                )
+
+        return circuit
+
     def _free_axis_ansatz_circuit(self):
         # TODO: implement here.
         pass
 
     def minimize(self):
         cost_history = []
-        init_theta_list = (
-            np.random.random(self.__num_qubits * (self.__num_layer + 1) * 3) * 1e-1
-        )
+        if self.__rotation_gate == "normal":
+            init_theta_list = (
+                np.random.random(self.__num_qubits * (self.__num_layer + 1) * 3) * 1e-1
+            )
+        elif self.__rotation_gate == "efficientSU2":
+            init_theta_list = (
+                np.random.random(self.__num_qubits * (self.__num_layer + 1) * 2) * 1e-1
+            )
+        else:
+            raise ValueError
+
         cost_history.append(self._cost_function(init_theta_list))
 
         self.num_iter = 1

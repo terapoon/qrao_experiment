@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 results
+results_debug
+*.out
+*.err

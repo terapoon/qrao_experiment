@@ -26,6 +26,9 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
                 entanglement=entanglement,
                 num_layer=level,
                 qubit_pairs=qrac.calculate_edge_among_qubits(instance),
+                rotation_gate="efficientSU2",
+                method="NFT",
+                options=None,
             )
             cost_history, best_theta_list = vqe.minimize()
             rounding = MagicRounding(m, n, shots, vqe, qrac)
@@ -43,6 +46,8 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
                 "entanglement": entanglement,
                 "level": level,
                 "optimum_solution": instance.solve().get_objective_value(),
+                "cost_history": cost_history,
+                "best_theta_list": best_theta_list,
             }
 
             # save experiment result
@@ -54,12 +59,11 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
 
 
 # search pattern
-# search_pattern = {3: [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]}
-search_pattern = {3: [16, 18]}
+search_pattern = {3: [42, 44, 46, 48, 50]}
 qrao_patterns = [(3, 1)]
 # qrao_patterns = [(2, 1)]
 # qrao_patterns = [(1, 1)]
-MAX_LEVEL = 10
+MAX_LEVEL = 5
 TRIAL = 10
 ROUNDING_SHOTS = 1000
 
@@ -68,7 +72,7 @@ for deg, num_vertices in search_pattern.items():
         for m, n in qrao_patterns:
             for i in tqdm(range(TRIAL)):
                 graph, instance = regular_graph(num, deg)
-                root_path = f"results/regular/deg{deg}/nodes{num}/trial{i}"
+                root_path = f"results_debug/regular/deg{deg}/nodes{num}/trial{i}"
                 os.makedirs(root_path, exist_ok=True)
                 with open(f"{root_path}/graph_data.pkl", "wb") as f:
                     pickle.dump(node_link_data(graph), f)
@@ -78,6 +82,6 @@ for deg, num_vertices in search_pattern.items():
                     n,
                     instance,
                     MAX_LEVEL,
-                    f"results/regular/deg{deg}/nodes{num}/trial{i}",
+                    f"results_debug/regular/deg{deg}/nodes{num}/trial{i}",
                     ROUNDING_SHOTS,
                 )
