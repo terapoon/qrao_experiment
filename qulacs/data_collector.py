@@ -70,7 +70,7 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
 
 
 # search pattern
-search_pattern = {3: [42, 44, 46, 48, 50]}
+search_pattern = {3: [26, 28], 4: [26, 28], 5: [26, 28], 6: [26, 28]}
 qrao_patterns = [(3, 1)]
 # qrao_patterns = [(2, 1)]
 # qrao_patterns = [(1, 1)]
@@ -83,7 +83,7 @@ for deg, num_vertices in search_pattern.items():
         for m, n in qrao_patterns:
             for i in tqdm(range(TRIAL)):
                 graph, instance = regular_graph(num, deg)
-                root_path = f"results_debug/regular/deg{deg}/nodes{num}/trial{i}"
+                root_path = f"results/regular/deg{deg}/nodes{num}/trial{i}"
                 os.makedirs(root_path, exist_ok=True)
                 with open(f"{root_path}/graph_data.pkl", "wb") as f:
                     pickle.dump(node_link_data(graph), f)
@@ -93,6 +93,6 @@ for deg, num_vertices in search_pattern.items():
                     n,
                     instance,
                     MAX_LEVEL,
-                    f"results_debug/regular/deg{deg}/nodes{num}/trial{i}",
+                    f"results/regular/deg{deg}/nodes{num}/trial{i}",
                     ROUNDING_SHOTS,
                 )

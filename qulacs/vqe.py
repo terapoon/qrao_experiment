@@ -123,12 +123,12 @@ class VQEForQRAO:
             if self.__entanglement == "compatilbe":
                 # Compatible Entanglement
                 for i, j in self.__qubit_pairs:
-                    circuit.add_CZ_gate(i, j)
+                    circuit.add_CNOT_gate(i, j)
 
             elif self.__entanglement == "linear":
                 # Linear entanglement
                 for i in range(self.__num_qubits - 1):
-                    circuit.add_CZ_gate(i, i + 1)
+                    circuit.add_CNOT_gate(i, i + 1)
 
             elif self.__entanglement == "random":
                 # Random entanglement
@@ -138,7 +138,7 @@ class VQEForQRAO:
                         j = np.random.randint(0, self.__num_qubits)
                         if i != j:
                             break
-                    circuit.add_CZ_gate(i, j)
+                    circuit.add_CNOT_gate(i, j)
 
             # Add RY gates.
             for i in range(self.__num_qubits):

@@ -190,15 +190,12 @@ class RandomAccessEncoder:
                     terms = (
                         pauli_table[pauli_id_list[idx]]
                         if terms is None
-                        # else terms ^ pauli_table[pauli_id_list[idx]]
                         else pauli_table[pauli_id_list[idx]] ^ terms
                     )
                 else:
-                    # terms = I if terms is None else terms ^ I
                     terms = I if terms is None else I ^ terms
             terms = coef * terms
             all_term = terms if all_term is None else all_term + terms
-        print(all_term)
         return all_term.to_matrix()
 
     def calculate_edge_among_qubits(

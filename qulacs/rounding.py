@@ -230,3 +230,134 @@ class MagicRounding:
         }
 
         return objective_value_counts
+
+
+class PauliRounding:
+    def __init__(
+        self,
+        m: int,
+        n: int,
+        shots: int,
+        vqe_instance: VQEForQRAO,
+        encoder: RandomAccessEncoder,
+    ):
+        self.__decording_rules = defaultdict(
+            lambda: (),
+            {
+                # (1,1,1)-QRAC
+                (1, 1): ({"0": [0], "1": [1]},),
+                # (2,1,p)-QRAC, p~0.85
+                (2, 1): (
+                    # measurement with {I xi+ I, I xi- I}
+                    {"0": [0, 0], "1": [1, 1]},
+                    # measurement with {X xi+ X, X xi- X}
+                    {"0": [0, 1], "1": [1, 0]},
+                ),
+                # (3,1,p)-QRAC, p~0.79
+                (3, 1): (
+                    # measurement with {I mu+ I, I mu- I}
+                    {"0": [0, 0, 0], "1": [1, 1, 1]},
+                    # measurement with {X mu+ X, X mu- X}
+                    {"0": [0, 1, 1], "1": [1, 0, 0]},
+                    # measurement with {Y mu+ Y, Y mu- Y}
+                    {"0": [1, 0, 1], "1": [0, 1, 0]},
+                    # measurement with {Z mu+ Z, Z mu- Z}
+                    {"0": [1, 1, 0], "1": [0, 0, 1]},
+                ),
+                # TODO (3,2,p)-QRAC, p~??
+                # TODO (5,2,p)-QRAC, p~??
+            },
+        )
+        self.__operator_indices = defaultdict(
+            lambda: (),
+            {
+                # (1,1,1)-QRAC
+                (1, 1): {"Z": 0},
+                # (2,1,p)-QRAC, p~0.85
+                (2, 1): {"X": 0, "Z": 1},
+                # (3,1,p)-QRAC, p~0.79
+                (3, 1): {"X": 0, "Y": 1, "Z": 2},
+                # TODO (3,2,p)-QRAC, p~??
+                # TODO (5,2,p)-QRAC, p~??
+            },
+        )
+
+        self.__m = m
+        self.__n = n
+        self.__shots = shots
+        self.__decording_rule = self.__decording_rules[(self.__m, self.__n)]
+        self.__operator_index = self.__operator_indices[(self.__m, self.__n)]
+        assert self.__decording_rule != (), f"({m},{n},p)-QRAC is not supported now."
+        self.__vqe_instance = vqe_instance
+        self.__encoder = encoder
+
+    def round(self, best_theta_list: List[float]):
+        """Perform pauli rounding"""
+        num_qubits = len(self.__encoder.qubit_to_vertex_map)
+        state_x = self.__vqe_instance.make_state(best_theta_list)
+        state_y = self.__vqe_instance.make_state(best_theta_list)
+        state_z = self.__vqe_instance.make_state(best_theta_list)
+
+        circuit_x = QuantumCircuit(num_qubits)
+        for i in range(num_qubits):
+            circuit_x.add_H_gate(i)
+        circuit_x.update_quantum_state(state_x)
+
+        circuit_y = QuantumCircuit(num_qubits)
+        for i in range(num_qubits):
+            circuit_y.add_Sdg_gate(i)
+            circuit_y.add_H_gate(i)
+        circuit_y.update_quantum_state(state_y)
+
+        results = [
+            [
+                bin(sample)[2:].zfill(num_qubits)[::-1]
+                for sample in state_x.sampling(self.__shots)
+            ],
+            [
+                bin(sample)[2:].zfill(num_qubits)[::-1]
+                for sample in state_y.sampling(self.__shots)
+            ],
+            [
+                bin(sample)[2:].zfill(num_qubits)[::-1]
+                for sample in state_z.sampling(self.__shots)
+            ],
+        ]
+
+        counts = []
+        for result in results:
+            count = []
+            for i in range(num_qubits):
+                count.append(
+                    defaultdict(lambda: 0, dict(Counter([val[0] for val in result])))
+                )
+            counts.append(count)
+
+        decoded_results = []
+        for count in counts:
+            decoded_result = []
+            for cnt in count:
+                decoded_val = 0 if cnt["0"] > cnt["1"] else 1
+                if cnt["0"] == cnt["1"]:
+                    decoded_val = np.random.randint(2)
+                decoded_result.append(decoded_val)
+            decoded_results.append(decoded_result)
+
+        solution = ""
+        for vertex in range(len(self.__encoder.vertex_to_op_map)):
+            qubit, operator = self.__encoder.vertex_to_op_map[vertex]
+            operator_index = self.__operator_index[operator]
+            vertex_value = decoded_results[operator_index][qubit]
+            solution += str(vertex_value)
+
+        return solution
+
+    @staticmethod
+    def get_objective_value_counts(
+        problem_instance: Model,
+        solution: str,
+    ) -> int:
+        objective = from_docplex_mp(problem_instance).objective
+        objective_value = objective.evaluate(np.asarray([int(bit) for bit in solution]))
+
+        return objective_value
