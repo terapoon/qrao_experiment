@@ -45,8 +45,16 @@ class VQEForQRAO:
 
         self.__printing = printing
 
-        self.__seed_locked = False
         self.__random_pairs = []
+        used = defaultdict(lambda: False, {})
+        for _ in range(len(self.__qubit_pairs)):
+            i = np.random.randint(0, self.__num_qubits)
+            while True:
+                j = np.random.randint(0, self.__num_qubits)
+                if i != j and not used[(min(i, j), max(i, j))]:
+                    break
+            used[(min(i, j), max(i, j))] = True
+            self.__random_pairs.append((min(i, j), max(i, j)))
 
     @property
     def num_qubits(self):
@@ -102,21 +110,8 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
-                if self.__seed_locked:
-                    for (i, j) in self.__random_pairs:
-                        circuit.add_CZ_gate(i, j)
-                else:
-                    used = defaultdict(lambda: False, {})
-                    for _ in range(len(self.__qubit_pairs)):
-                        i = np.random.randint(0, self.__num_qubits)
-                        while True:
-                            j = np.random.randint(0, self.__num_qubits)
-                            if i != j and not used[(min(i, j), max(i, j))]:
-                                break
-                        circuit.add_CZ_gate(i, j)
-                        used[(min(i, j), max(i, j))] = True
-                        self.__random_pairs.append((min(i, j), max(i, j)))
-                    self.__seed_loked = True
+                for i, j in self.__random_pairs:
+                    circuit.add_CZ_gate(i, j)
 
             # Add RY gates.
             for i in range(self.__num_qubits):
@@ -152,21 +147,8 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
-                if self.__seed_locked:
-                    for (i, j) in self.__random_pairs:
-                        circuit.add_CNOT_gate(i, j)
-                else:
-                    used = defaultdict(lambda: False, {})
-                    for _ in range(len(self.__qubit_pairs)):
-                        i = np.random.randint(0, self.__num_qubits)
-                        while True:
-                            j = np.random.randint(0, self.__num_qubits)
-                            if i != j and not used[(min(i, j), max(i, j))]:
-                                break
-                        circuit.add_CNOT_gate(i, j)
-                        used[(min(i, j), max(i, j))] = True
-                        self.__random_pairs.append((min(i, j), max(i, j)))
-                    self.__seed_locked = True
+                for i, j in self.__random_pairs:
+                    circuit.add_CNOT_gate(i, j)
 
             # Add RY & RZ gates.
             for i in range(self.__num_qubits):
