@@ -78,7 +78,7 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
 
 
 # search pattern
-search_pattern = {deg: [26, 28, 30] for deg in [3, 4, 5, 6]}
+search_pattern = {deg: [14, 16, 18, 20, 22, 24] for deg in [3, 4, 5, 6]}
 qrao_patterns = [(3, 1)]
 # qrao_patterns = [(2, 1)]
 # qrao_patterns = [(1, 1)]

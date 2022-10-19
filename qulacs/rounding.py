@@ -262,37 +262,40 @@ class PauliRounding:
         self.__vqe_instance = vqe_instance
         self.__encoder = encoder
 
+    def _measurement_x(self, best_theta_list: List[float]):
+        state = self.__vqe_instance._make_state(best_theta_list)
+        num_qubits = len(self.__encoder.qubit_to_vertex_map)
+        circuit = QuantumCircuit(num_qubits)
+        for i in range(num_qubits):
+            circuit.add_H_gate(i)
+        circuit.update_quantum_state(state)
+        meas_outcome = state.sampling(self.__shots)
+        return [bin(sample)[2:].zfill(num_qubits)[::-1] for sample in meas_outcome]
+
+    def _measurement_y(self, best_theta_list: List[float]):
+        state = self.__vqe_instance._make_state(best_theta_list)
+        num_qubits = len(self.__encoder.qubit_to_vertex_map)
+        circuit = QuantumCircuit(num_qubits)
+        for i in range(num_qubits):
+            circuit.add_Sdag_gate(i)
+            circuit.add_H_gate(i)
+        circuit.update_quantum_state(state)
+        meas_outcome = state.sampling(self.__shots)
+        return [bin(sample)[2:].zfill(num_qubits)[::-1] for sample in meas_outcome]
+
+    def _measurement_z(self, best_theta_list: List[float]):
+        state = self.__vqe_instance._make_state(best_theta_list)
+        num_qubits = len(self.__encoder.qubit_to_vertex_map)
+        meas_outcome = state.sampling(self.__shots)
+        return [bin(sample)[2:].zfill(num_qubits)[::-1] for sample in meas_outcome]
+
     def round(self, best_theta_list: List[float]):
         """Perform pauli rounding"""
         num_qubits = len(self.__encoder.qubit_to_vertex_map)
-        state_x = self.__vqe_instance._make_state(best_theta_list)
-        state_y = self.__vqe_instance._make_state(best_theta_list)
-        state_z = self.__vqe_instance._make_state(best_theta_list)
-
-        circuit_x = QuantumCircuit(num_qubits)
-        for i in range(num_qubits):
-            circuit_x.add_H_gate(i)
-        circuit_x.update_quantum_state(state_x)
-
-        circuit_y = QuantumCircuit(num_qubits)
-        for i in range(num_qubits):
-            circuit_y.add_Sdag_gate(i)
-            circuit_y.add_H_gate(i)
-        circuit_y.update_quantum_state(state_y)
-
         results = [
-            [
-                bin(sample)[2:].zfill(num_qubits)[::-1]
-                for sample in state_x.sampling(self.__shots)
-            ],
-            [
-                bin(sample)[2:].zfill(num_qubits)[::-1]
-                for sample in state_y.sampling(self.__shots)
-            ],
-            [
-                bin(sample)[2:].zfill(num_qubits)[::-1]
-                for sample in state_z.sampling(self.__shots)
-            ],
+            self._measurement_x(best_theta_list),
+            self._measurement_y(best_theta_list),
+            self._measurement_z(best_theta_list),
         ]
 
         counts = []
@@ -300,7 +303,7 @@ class PauliRounding:
             count = []
             for i in range(num_qubits):
                 count.append(
-                    defaultdict(lambda: 0, dict(Counter([val[0] for val in result])))
+                    defaultdict(lambda: 0, dict(Counter([val[i] for val in result])))
                 )
             counts.append(count)
 
