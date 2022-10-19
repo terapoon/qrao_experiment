@@ -241,33 +241,6 @@ class PauliRounding:
         vqe_instance: VQEForQRAO,
         encoder: RandomAccessEncoder,
     ):
-        self.__decording_rules = defaultdict(
-            lambda: (),
-            {
-                # (1,1,1)-QRAC
-                (1, 1): ({"0": [0], "1": [1]},),
-                # (2,1,p)-QRAC, p~0.85
-                (2, 1): (
-                    # measurement with {I xi+ I, I xi- I}
-                    {"0": [0, 0], "1": [1, 1]},
-                    # measurement with {X xi+ X, X xi- X}
-                    {"0": [0, 1], "1": [1, 0]},
-                ),
-                # (3,1,p)-QRAC, p~0.79
-                (3, 1): (
-                    # measurement with {I mu+ I, I mu- I}
-                    {"0": [0, 0, 0], "1": [1, 1, 1]},
-                    # measurement with {X mu+ X, X mu- X}
-                    {"0": [0, 1, 1], "1": [1, 0, 0]},
-                    # measurement with {Y mu+ Y, Y mu- Y}
-                    {"0": [1, 0, 1], "1": [0, 1, 0]},
-                    # measurement with {Z mu+ Z, Z mu- Z}
-                    {"0": [1, 1, 0], "1": [0, 0, 1]},
-                ),
-                # TODO (3,2,p)-QRAC, p~??
-                # TODO (5,2,p)-QRAC, p~??
-            },
-        )
         self.__operator_indices = defaultdict(
             lambda: (),
             {
@@ -285,18 +258,16 @@ class PauliRounding:
         self.__m = m
         self.__n = n
         self.__shots = shots
-        self.__decording_rule = self.__decording_rules[(self.__m, self.__n)]
         self.__operator_index = self.__operator_indices[(self.__m, self.__n)]
-        assert self.__decording_rule != (), f"({m},{n},p)-QRAC is not supported now."
         self.__vqe_instance = vqe_instance
         self.__encoder = encoder
 
     def round(self, best_theta_list: List[float]):
         """Perform pauli rounding"""
         num_qubits = len(self.__encoder.qubit_to_vertex_map)
-        state_x = self.__vqe_instance.make_state(best_theta_list)
-        state_y = self.__vqe_instance.make_state(best_theta_list)
-        state_z = self.__vqe_instance.make_state(best_theta_list)
+        state_x = self.__vqe_instance._make_state(best_theta_list)
+        state_y = self.__vqe_instance._make_state(best_theta_list)
+        state_z = self.__vqe_instance._make_state(best_theta_list)
 
         circuit_x = QuantumCircuit(num_qubits)
         for i in range(num_qubits):
@@ -305,7 +276,7 @@ class PauliRounding:
 
         circuit_y = QuantumCircuit(num_qubits)
         for i in range(num_qubits):
-            circuit_y.add_Sdg_gate(i)
+            circuit_y.add_Sdag_gate(i)
             circuit_y.add_H_gate(i)
         circuit_y.update_quantum_state(state_y)
 
@@ -353,7 +324,7 @@ class PauliRounding:
         return solution
 
     @staticmethod
-    def get_objective_value_counts(
+    def get_objective_value(
         problem_instance: Model,
         solution: str,
     ) -> int:

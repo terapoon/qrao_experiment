@@ -1,4 +1,5 @@
 from typing import List, Set, Tuple
+from collections import defaultdict
 
 from qulacs import QuantumState, QuantumCircuit, Observable
 import numpy as np
@@ -90,13 +91,15 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
+                used = defaultdict(lambda: False, {})
                 for _ in range(len(self.__qubit_pairs)):
                     i = np.random.randint(0, self.__num_qubits)
                     while True:
                         j = np.random.randint(0, self.__num_qubits)
-                        if i != j:
+                        if i != j and not used[(min(i, j), max(i, j))]:
                             break
                     circuit.add_CZ_gate(i, j)
+                    used[(min(i, j), max(i, j))] = True
 
             # Add RY gates.
             for i in range(self.__num_qubits):
@@ -132,15 +135,17 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
+                used = defaultdict(lambda: False, {})
                 for _ in range(len(self.__qubit_pairs)):
-                    i = np.random.randint(0, self.__num_qubits)
+                    i = np.random.randing(0, self.__num_qubits)
                     while True:
                         j = np.random.randint(0, self.__num_qubits)
-                        if i != j:
+                        if i != j and not used[(min(i, j), max(i, j))]:
                             break
                     circuit.add_CNOT_gate(i, j)
+                    used[(min(i, j), max(i, j))] = True
 
-            # Add RY gates.
+            # Add RY & RZ gates.
             for i in range(self.__num_qubits):
                 circuit.add_RY_gate(
                     i,

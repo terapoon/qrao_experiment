@@ -2,7 +2,7 @@
 from maxcut_instance_generator import regular_graph
 from encoding import RandomAccessEncoder
 from vqe import VQEForQRAO
-from rounding import MagicRounding
+from rounding import MagicRounding, PauliRounding
 
 import os
 import pickle
@@ -40,16 +40,24 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
                 options=None,
             )
             cost_history, best_theta_list = vqe.minimize()
-            rounding = MagicRounding(m, n, shots, vqe, qrac)
-            solution_counts = rounding.round(best_theta_list)
-            maxcut_values = rounding.get_objective_value_counts(
-                instance, solution_counts
+            magic_rounding = MagicRounding(m, n, shots, vqe, qrac)
+            solution_counts_magic = magic_rounding.round(best_theta_list)
+            maxcut_values_magic = magic_rounding.get_objective_value_counts(
+                instance, solution_counts_magic
+            )
+
+            pauli_rounding = PauliRounding(m, n, shots, vqe, qrac)
+            solution_pauli = pauli_rounding.round(best_theta_list)
+            maxcut_value_pauli = pauli_rounding.get_objective_value(
+                instance, solution_pauli
             )
 
             # result of the experiment
             result = {
-                "solution_counts": solution_counts,
-                "maxcut_values": maxcut_values,
+                "solution_counts_magic": solution_counts_magic,
+                "maxcut_values_magic": maxcut_values_magic,
+                "solution_pauli": solution_pauli,
+                "maxcut_value_pauli": maxcut_value_pauli,
                 "num_qubit": num_qubit,
                 "num_edge": num_edge,
                 "entanglement": entanglement,
@@ -70,7 +78,7 @@ def run_qrao(m, n, instance, max_level, root_path, shots):
 
 
 # search pattern
-search_pattern = {3: [26, 28], 4: [26, 28], 5: [26, 28], 6: [26, 28]}
+search_pattern = {deg: [26, 28, 30] for deg in [3, 4, 5, 6]}
 qrao_patterns = [(3, 1)]
 # qrao_patterns = [(2, 1)]
 # qrao_patterns = [(1, 1)]
