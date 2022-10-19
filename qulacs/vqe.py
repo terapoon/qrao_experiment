@@ -103,11 +103,7 @@ class VQEForQRAO:
             elif self.__entanglement == "random":
                 # Random entanglement
                 if self.__seed_locked:
-                    for (i, j) in self.__random_pairs[
-                        layer
-                        * len(self.__qubit_pairs) : (layer + 1)
-                        * len(self.__qubit_pairs)
-                    ]:
+                    for (i, j) in self.__random_pairs:
                         circuit.add_CZ_gate(i, j)
                 else:
                     used = defaultdict(lambda: False, {})
@@ -120,6 +116,7 @@ class VQEForQRAO:
                         circuit.add_CZ_gate(i, j)
                         used[(min(i, j), max(i, j))] = True
                         self.__random_pairs.append((min(i, j), max(i, j)))
+                    self.__seed_loked = True
 
             # Add RY gates.
             for i in range(self.__num_qubits):
@@ -129,8 +126,6 @@ class VQEForQRAO:
                     theta_list[(layer + 1) * 3 * self.__num_qubits + 3 * i + 1],
                     theta_list[(layer + 1) * 3 * self.__num_qubits + 3 * i + 2],
                 )
-        if not self.__seed_locked:
-            self.__seed_locked = True
 
         return circuit
 
@@ -158,11 +153,7 @@ class VQEForQRAO:
             elif self.__entanglement == "random":
                 # Random entanglement
                 if self.__seed_locked:
-                    for (i, j) in self.__random_pairs[
-                        layer
-                        * len(self.__qubit_pairs) : (layer + 1)
-                        * len(self.__qubit_pairs)
-                    ]:
+                    for (i, j) in self.__random_pairs:
                         circuit.add_CNOT_gate(i, j)
                 else:
                     used = defaultdict(lambda: False, {})
@@ -175,6 +166,7 @@ class VQEForQRAO:
                         circuit.add_CNOT_gate(i, j)
                         used[(min(i, j), max(i, j))] = True
                         self.__random_pairs.append((min(i, j), max(i, j)))
+                    self.__seed_locked = True
 
             # Add RY & RZ gates.
             for i in range(self.__num_qubits):
@@ -185,9 +177,6 @@ class VQEForQRAO:
                 circuit.add_RZ_gate(
                     i, theta_list[(layer + 1) * 2 * self.__num_qubits + 2 * i + 1]
                 )
-
-        if not self.__seed_locked:
-            self.__seed_locked = True
 
         return circuit
 
