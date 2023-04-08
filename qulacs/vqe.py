@@ -1,5 +1,4 @@
 from typing import List, Set, Tuple
-from collections import defaultdict
 
 from qulacs import QuantumState, QuantumCircuit, Observable
 import numpy as np
@@ -18,6 +17,8 @@ class VQEForQRAO:
         method: str = "COBYLA",
         options={"disp": False, "maxiter": 25000},
         printing: bool = False,
+        init_state=None,
+        init_params: str = "random",
     ):
         self.__hamiltonian = hamiltonian
         self.__num_qubits = hamiltonian.get_qubit_count()
@@ -45,16 +46,17 @@ class VQEForQRAO:
 
         self.__printing = printing
 
-        self.__random_pairs = []
-        used = defaultdict(lambda: False, {})
-        for _ in range(len(self.__qubit_pairs)):
-            i = np.random.randint(0, self.__num_qubits)
-            while True:
-                j = np.random.randint(0, self.__num_qubits)
-                if i != j and not used[(min(i, j), max(i, j))]:
-                    break
-            used[(min(i, j), max(i, j))] = True
-            self.__random_pairs.append((min(i, j), max(i, j)))
+        self.__pairs = [
+            (i, j)
+            for i in range(self.__num_qubits)
+            for j in range(i + 1, self.__num_qubits)
+        ]
+        total_pairs_num = self.__num_qubits * (self.__num_qubits - 1) // 2
+        self.__random_idxs = np.random.choice(
+            total_pairs_num, len(self.__qubit_pairs), replace=False
+        )
+        self.__init_state = init_state
+        self.__init_params = init_params
 
     @property
     def num_qubits(self):
@@ -67,7 +69,10 @@ class VQEForQRAO:
     def _make_state(self, theta_list):
         # Prepare |00...0>.
         state = QuantumState(self.__num_qubits)
-        state.set_zero_state()
+        if self.__init_state is None:
+            state.set_zero_state()
+        else:
+            state.load(self.__init_state)
         # Construct ansatz circuit.
         if self.__rotation_gate == "normal":
             ansatz = self._normal_ansatz_circuit(theta_list)
@@ -110,7 +115,8 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
-                for i, j in self.__random_pairs:
+                for idx in self.__random_idxs:
+                    i, j = self.__pairs[idx]
                     circuit.add_CZ_gate(i, j)
 
             # Add RY gates.
@@ -147,7 +153,8 @@ class VQEForQRAO:
 
             elif self.__entanglement == "random":
                 # Random entanglement
-                for i, j in self.__random_pairs:
+                for idx in self.__random_idxs:
+                    i, j = self.__pairs[idx]
                     circuit.add_CNOT_gate(i, j)
 
             # Add RY & RZ gates.
@@ -168,14 +175,30 @@ class VQEForQRAO:
 
     def minimize(self):
         cost_history = []
-        if self.__rotation_gate == "normal":
-            init_theta_list = (
-                np.random.random(self.__num_qubits * (self.__num_layer + 1) * 3) * 1e-1
-            )
-        elif self.__rotation_gate == "efficientSU2":
-            init_theta_list = (
-                np.random.random(self.__num_qubits * (self.__num_layer + 1) * 2) * 1e-1
-            )
+        if self.__init_params == "random":
+            if self.__rotation_gate == "normal":
+                init_theta_list = (
+                    np.random.random(self.__num_qubits * (self.__num_layer + 1) * 3)
+                    * 1e-1
+                )
+            elif self.__rotation_gate == "efficientSU2":
+                init_theta_list = (
+                    np.random.random(self.__num_qubits * (self.__num_layer + 1) * 2)
+                    * 1e-1
+                )
+            else:
+                raise ValueError
+        elif self.__init_params == "zero":
+            if self.__rotation_gate == "normal":
+                init_theta_list = np.zeros(
+                    self.__num_qubits * (self.__num_layer + 1) * 3
+                )
+            elif self.__rotation_gate == "efficientSU2":
+                init_theta_list = np.zeros(
+                    self.__num_qubits * (self.__num_layer + 1) * 2
+                )
+            else:
+                raise ValueError
         else:
             raise ValueError
 

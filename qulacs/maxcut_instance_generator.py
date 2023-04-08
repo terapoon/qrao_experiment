@@ -31,19 +31,22 @@ def regular_graph(
     num_nodes: int,
     degree: int,
     seed: int = 0,
-    min_weight: int = 1,
+    weighted: bool = False,
     max_weight: int = 1,
     draw: bool = False,
 ) -> Model:
-    assert max_weight >= min_weight
     seed = np.random.RandomState(seed)
     graph = nx.random_regular_graph(d=degree, n=num_nodes, seed=seed)
     edge_weights = np.zeros((num_nodes, num_nodes))
     for i, j in graph.edges():
-        if min_weight == max_weight:
-            weight = 1
+        if weighted and (max_weight <= 1):
+            # assign 1 or -1 randomly.
+            weight = seed.choice((-1, 1))
+        elif weighted and (max_weight > 1):
+            # assign weight from [1, max_weight] randomly
+            weight = seed.randint(1, max_weight + 1)
         else:
-            weight = seed.randint(min_weight, max_weight)
+            weight = 1
         edge_weights[i, j] = edge_weights[j, i] = weight
 
     if draw:

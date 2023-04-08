@@ -288,16 +288,15 @@ class PauliRounding:
         num_qubits = len(self.__encoder.qubit_to_vertex_map)
         meas_outcome = state.sampling(self.__shots)
         return [bin(sample)[2:].zfill(num_qubits)[::-1] for sample in meas_outcome]
-
-    def round(self, best_theta_list: List[float]):
-        """Perform pauli rounding"""
+    
+    def decoded_results(self, best_theta_list: List[float]):
+        """Peform pauli rounding"""
         num_qubits = len(self.__encoder.qubit_to_vertex_map)
         results = [
             self._measurement_x(best_theta_list),
             self._measurement_y(best_theta_list),
             self._measurement_z(best_theta_list),
         ]
-
         counts = []
         for result in results:
             count = []
@@ -316,7 +315,11 @@ class PauliRounding:
                     decoded_val = np.random.randint(2)
                 decoded_result.append(decoded_val)
             decoded_results.append(decoded_result)
+        
+        return decoded_results
 
+    def round(self, best_theta_list: List[float]):
+        decoded_results = self.decoded_results(best_theta_list)
         solution = ""
         for vertex in range(len(self.__encoder.vertex_to_op_map)):
             qubit, operator = self.__encoder.vertex_to_op_map[vertex]
